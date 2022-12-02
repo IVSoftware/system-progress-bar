@@ -1,4 +1,5 @@
 using System;
+using System.Xml.Schema;
 
 namespace system_progress_bar
 {
@@ -11,37 +12,39 @@ namespace system_progress_bar
         }
 
 
-        private void onButtonUnzip(object? sender, EventArgs e)
+        private async void onButtonUnzip(object? sender, EventArgs e)
         {
-            BeginInvoke(new Action(() =>
-            {
-                progressBar1.Minimum = 0;
-                progressBar1.Maximum = FileUtils.GetFileCountMock();
-                Progress<int> progress = new Progress<int>(callback);
-                FileUtils.UnzipTo("mockSource", "mockDest", true, progress);
-            }));
+            progressBar1.Visible = true;
+            Progress<int> progress = new Progress<int>(callback);
+            await Task.Run(() => FileUtils.UnzipTo("mockSource", "mockDest", true, progress));
+            progressBar1.Visible = false;
         }
 
-        private void callback(int obj)
+        private void callback(int value)
         {
-            progressBar1.Value = obj;
+            progressBar1.Value = value;
         }
     }
     class FileUtils
     {
-        public static int GetFileCountMock() => 25;
-        public static async void UnzipTo(
-            string targetDir,
+        static string[] GetFilesMock() => new string[25];
+        static void UnzipOneMock(string sourceDir, string targetDir, string file) 
+            => Thread.Sleep(TimeSpan.FromMilliseconds(100));
+        public static void UnzipTo(
             string sourceDir,
+            string targetDir,
             bool option, 
             IProgress<int> progress)
         {
-            for (int complete = 0; complete < GetFileCountMock(); complete++)
+            var files = GetFilesMock();
+            int completed = 1;
+
+            double total = files.Length;
+            foreach (var file in files)
             {
-                // Unzip the file
-                // Thread.Sleep(TimeSpan.FromSeconds(1));
-                await Task.Delay(500);
-                progress.Report(complete);
+                UnzipOneMock(sourceDir, targetDir, file);
+                var net = (int)(completed++ * 100 / total);
+                progress.Report(net);
             }
         }
     }
